@@ -15,7 +15,10 @@ $ curl -s http://localhost:9586/metrics | grep wireguard
 wireguard_device_info{device="wg0",public_key="TM7UyJLMf7nPvWC4fb5xoEQedgQ9RwyyEaWGk1Zrow4="} 1
 # HELP wireguard_peer_info Metadata about a peer. The public_key label on peer metrics refers to the peer's public key; not the device's public key.
 # TYPE wireguard_peer_info gauge
-wireguard_peer_info{allowed_ips="192.168.20.0/24",device="wg0",public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 1
+wireguard_peer_info{allowed_ips="192.168.20.0/24",device="wg0",endpoint="192.168.1.150:51820",public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 1
+# HELP wireguard_peer_last_handshake_seconds UNIX timestamp for the last handshake with a given peer.
+# TYPE wireguard_peer_last_handshake_seconds gauge
+wireguard_peer_last_handshake_seconds{public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 1.558580872e+09
 # HELP wireguard_peer_receive_bytes_total Number of bytes received from a given peer.
 # TYPE wireguard_peer_receive_bytes_total counter
 wireguard_peer_receive_bytes_total{public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 0
