@@ -13,10 +13,11 @@ var _ prometheus.Collector = &collector{}
 // A collector is a prometheus.Collector for a WireGuard device.
 type collector struct {
 	DeviceInfo *prometheus.Desc
-	PeerInfo   *prometheus.Desc
 
+	PeerInfo          *prometheus.Desc
 	PeerReceiveBytes  *prometheus.Desc
 	PeerTransmitBytes *prometheus.Desc
+	PeerLastHandshake *prometheus.Desc
 
 	devices func() ([]*wgtypes.Device, error)
 }
@@ -35,7 +36,7 @@ func New(devices func() ([]*wgtypes.Device, error)) prometheus.Collector {
 		PeerInfo: prometheus.NewDesc(
 			"wireguard_peer_info",
 			"Metadata about a peer. The public_key label on peer metrics refers to the peer's public key; not the device's public key.",
-			[]string{"device", "public_key", "allowed_ips"},
+			[]string{"allowed_ips", "device", "endpoint", "public_key"},
 			nil,
 		),
 
@@ -53,6 +54,13 @@ func New(devices func() ([]*wgtypes.Device, error)) prometheus.Collector {
 			nil,
 		),
 
+		PeerLastHandshake: prometheus.NewDesc(
+			"wireguard_peer_last_handshake_seconds",
+			"UNIX timestamp for the last handshake with a given peer.",
+			[]string{"public_key"},
+			nil,
+		),
+
 		devices: devices,
 	}
 }
@@ -64,6 +72,7 @@ func (c *collector) Describe(ch chan<- *prometheus.Desc) {
 		c.PeerInfo,
 		c.PeerReceiveBytes,
 		c.PeerTransmitBytes,
+		c.PeerLastHandshake,
 	}
 
 	for _, d := range ds {
@@ -90,6 +99,12 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		for _, p := range d.Peers {
 			pub := p.PublicKey.String()
 
+			// Use empty string instead of special Go <nil> syntax for no endpoint.
+			var endpoint string
+			if p.Endpoint != nil {
+				endpoint = p.Endpoint.String()
+			}
+
 			ch <- prometheus.MustNewConstMetric(
 				c.PeerInfo,
 				prometheus.GaugeValue,
@@ -97,7 +112,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				// TODO(mdlayher): is there a better way to represent allowed IP
 				// ranges? Perhaps most users will use a single CIDR anyway and
 				// it won't be a big deal.
-				d.Name, pub, ipsString(p.AllowedIPs),
+				ipsString(p.AllowedIPs), d.Name, endpoint, pub,
 			)
 
 			ch <- prometheus.MustNewConstMetric(
@@ -111,6 +126,13 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				c.PeerTransmitBytes,
 				prometheus.CounterValue,
 				float64(p.TransmitBytes),
+				pub,
+			)
+
+			ch <- prometheus.MustNewConstMetric(
+				c.PeerLastHandshake,
+				prometheus.GaugeValue,
+				float64(p.LastHandshakeTime.Unix()),
 				pub,
 			)
 		}

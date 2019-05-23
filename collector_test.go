@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -39,9 +40,14 @@ func TestCollector(t *testing.T) {
 						Name:      "wg0",
 						PublicKey: devA,
 						Peers: []wgtypes.Peer{{
-							PublicKey:     peerA,
-							ReceiveBytes:  1,
-							TransmitBytes: 2,
+							PublicKey: peerA,
+							Endpoint: &net.UDPAddr{
+								IP:   net.ParseIP("fd00::1"),
+								Port: 51820,
+							},
+							LastHandshakeTime: time.Unix(10, 0),
+							ReceiveBytes:      1,
+							TransmitBytes:     2,
 							AllowedIPs: []net.IPNet{
 								{
 									IP:   net.ParseIP("192.168.1.0"),
@@ -63,7 +69,8 @@ func TestCollector(t *testing.T) {
 			metrics: []string{
 				`wireguard_device_info{device="wg0",public_key="AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="} 1`,
 				`wireguard_device_info{device="wg1",public_key="AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI="} 1`,
-				`wireguard_peer_info{allowed_ips="192.168.1.0/24,2001:db8::/32",device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_info{allowed_ips="192.168.1.0/24,2001:db8::/32",device="wg0",endpoint="[fd00::1]:51820",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_last_handshake_seconds{public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 10`,
 				`wireguard_peer_receive_bytes_total{public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
 				`wireguard_peer_transmit_bytes_total{public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 2`,
 			},
