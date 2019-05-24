@@ -1,21 +1,13 @@
 package wireguardexporter
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/prometheus/util/promlint"
+	"github.com/mdlayher/promtest"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
@@ -79,80 +71,17 @@ func TestCollector(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			body := testCollector(t, tt.devices)
+			body := promtest.Collect(t, New(tt.devices))
 
-			s := bufio.NewScanner(bytes.NewReader(body))
-			for s.Scan() {
-				// Skip metric HELP and TYPE lines.
-				text := s.Text()
-				if strings.HasPrefix(text, "#") {
-					continue
-				}
-
-				var found bool
-				for _, m := range tt.metrics {
-					if text == m {
-						found = true
-						break
-					}
-				}
-
-				if !found {
-					t.Log(string(body))
-					t.Fatalf("metric string not matched in whitelist: %s", text)
-				}
+			if !promtest.Lint(t, body) {
+				t.Fatal("one or more promlint errors found")
 			}
 
-			if err := s.Err(); err != nil {
-				t.Fatalf("failed to scan metrics: %v", err)
+			if !promtest.Match(t, body, tt.metrics) {
+				t.Fatal("metrics did not match whitelist")
 			}
 		})
 	}
-}
-
-// testCollector uses the input device to generate a blob of Prometheus text
-// format metrics.
-func testCollector(t *testing.T, devices func() ([]*wgtypes.Device, error)) []byte {
-	t.Helper()
-
-	r := prometheus.NewPedanticRegistry()
-	r.MustRegister(New(devices))
-	h := promhttp.HandlerFor(r, promhttp.HandlerOpts{})
-
-	s := httptest.NewServer(h)
-	defer s.Close()
-
-	u, err := url.Parse(s.URL)
-	if err != nil {
-		t.Fatalf("failed to parse URL: %v", err)
-	}
-
-	res, err := http.Get(u.String())
-	if err != nil {
-		t.Fatalf("failed to perform HTTP request: %v", err)
-	}
-	defer res.Body.Close()
-
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatalf("failed to read response body: %v", err)
-	}
-
-	// Ensure best practices are followed by linting the metrics.
-	problems, err := promlint.New(bytes.NewReader(b)).Lint()
-	if err != nil {
-		t.Fatalf("failed to lint metrics: %v", err)
-	}
-
-	if len(problems) > 0 {
-		for _, p := range problems {
-			t.Logf("lint: %s: %s", p.Metric, p.Text)
-		}
-
-		t.Fatal("one or more promlint errors found")
-	}
-
-	return b
 }
 
 func publicKey(b byte) wgtypes.Key {

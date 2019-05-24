@@ -28,6 +28,8 @@ github.com/mdlayher/netlink v0.0.0-20190513144208-ba284d510044 h1:TpkQm/PKaI5boF
 github.com/mdlayher/netlink v0.0.0-20190513144208-ba284d510044/go.mod h1:gOrA34zDL0K3RsACQe54bDYLF/CeFspQ9m5DOycycQ8=
 github.com/mdlayher/netlink v0.0.0-20190516121005-0087c778e469 h1:6XwSkpIirmRxmstYmbL5PshChpqazkNfFNJ+Uj1iJlU=
 github.com/mdlayher/netlink v0.0.0-20190516121005-0087c778e469/go.mod h1:gOrA34zDL0K3RsACQe54bDYLF/CeFspQ9m5DOycycQ8=
+github.com/mdlayher/promtest v0.0.0-20190524150926-c5fad164e6e9 h1:1Lq6TAK25hGb3nGEWqzsJbmk1fNYnoRghftgL4+Xd0w=
+github.com/mdlayher/promtest v0.0.0-20190524150926-c5fad164e6e9/go.mod h1:wiPCHKsZvUKmKT731qLYoi89sjEoaSqG6yjdNKGaB2I=
 github.com/microsoft/go-winio v0.4.12 h1:3vDRRsUnj2dKE7QKoedntu9hbuD8gzaVd2E2UZioqx4=
 github.com/microsoft/go-winio v0.4.12/go.mod h1:kcIxxtKZE55DEncT/EOvFiygPobhUWpSDqDb47poQOU=
 github.com/mikioh/ipaddr v0.0.0-20190404000644-d465c8ab6721 h1:RlZweED6sbSArvlE924+mUcZuXKLBHA35U7LN621Bws=
