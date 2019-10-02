@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strings"
 
 	wireguardexporter "github.com/mdlayher/wireguard_exporter"
 	"github.com/prometheus/client_golang/prometheus"
@@ -17,6 +18,7 @@ func main() {
 	var (
 		metricsAddr = flag.String("metrics.addr", ":9586", "address for WireGuard exporter")
 		metricsPath = flag.String("metrics.path", "/metrics", "URL path for surfacing collected metrics")
+		wgPeerNames = flag.String("wireguard.peer-names", "", `optional: comma-separated list of colon-separated public keys and friendly peer names, such as: "keyA:foo,keyB:bar"`)
 	)
 
 	flag.Parse()
@@ -27,8 +29,21 @@ func main() {
 	}
 	defer client.Close()
 
+	// Configure the friendly peer names map if the flag is not empty.
+	peerNames := make(map[string]string)
+	if *wgPeerNames != "" {
+		for _, kvs := range strings.Split(*wgPeerNames, ",") {
+			kv := strings.Split(kvs, ":")
+			if len(kv) != 2 {
+				log.Fatalf("failed to parse %q as a valid public key and peer name", kv)
+			}
+
+			peerNames[kv[0]] = kv[1]
+		}
+	}
+
 	// Make Prometheus client aware of our collector.
-	c := wireguardexporter.New(client.Devices)
+	c := wireguardexporter.New(client.Devices, peerNames)
 	prometheus.MustRegister(c)
 
 	// Set up HTTP handler for metrics.
