@@ -51,21 +51,21 @@ func New(devices func() ([]*wgtypes.Device, error), peerNames map[string]string)
 		PeerReceiveBytes: prometheus.NewDesc(
 			"wireguard_peer_receive_bytes_total",
 			"Number of bytes received from a given peer.",
-			[]string{"public_key"},
+			[]string{"public_key", "device"},
 			nil,
 		),
 
 		PeerTransmitBytes: prometheus.NewDesc(
 			"wireguard_peer_transmit_bytes_total",
 			"Number of bytes transmitted to a given peer.",
-			[]string{"public_key"},
+			[]string{"public_key", "device"},
 			nil,
 		),
 
 		PeerLastHandshake: prometheus.NewDesc(
 			"wireguard_peer_last_handshake_seconds",
 			"UNIX timestamp for the last handshake with a given peer.",
-			[]string{"public_key"},
+			[]string{"public_key", "device"},
 			nil,
 		),
 
@@ -132,6 +132,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				prometheus.CounterValue,
 				float64(p.ReceiveBytes),
 				pub,
+				d.Name,
 			)
 
 			ch <- prometheus.MustNewConstMetric(
@@ -139,6 +140,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				prometheus.CounterValue,
 				float64(p.TransmitBytes),
 				pub,
+				d.Name,
 			)
 
 			ch <- prometheus.MustNewConstMetric(
@@ -146,6 +148,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				prometheus.GaugeValue,
 				float64(p.LastHandshakeTime.Unix()),
 				pub,
+				d.Name,
 			)
 		}
 	}
