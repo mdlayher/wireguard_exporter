@@ -50,6 +50,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle(*metricsPath, promhttp.Handler())
 
+	if _, err := client.Devices(); err != nil {
+		log.Fatalf("failed to retrieve wireguard devices: %v", err)
+	}
+
 	// Start listening for HTTP connections.
 	log.Printf("starting WireGuard exporter on %q", *metricsAddr)
 	if err := http.ListenAndServe(*metricsAddr, mux); err != nil {
