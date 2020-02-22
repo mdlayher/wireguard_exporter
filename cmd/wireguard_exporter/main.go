@@ -6,7 +6,6 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"strings"
 
 	wireguardexporter "github.com/mdlayher/wireguard_exporter"
 	"github.com/prometheus/client_golang/prometheus"
@@ -16,9 +15,10 @@ import (
 
 func main() {
 	var (
-		metricsAddr = flag.String("metrics.addr", ":9586", "address for WireGuard exporter")
-		metricsPath = flag.String("metrics.path", "/metrics", "URL path for surfacing collected metrics")
-		wgPeerNames = flag.String("wireguard.peer-names", "", `optional: comma-separated list of colon-separated public keys and friendly peer names, such as: "keyA:foo,keyB:bar"`)
+		metricsAddr     = flag.String("metrics.addr", ":9586", "address for WireGuard exporter")
+		metricsPath     = flag.String("metrics.path", "/metrics", "URL path for surfacing collected metrics")
+		wgPeerNames     = flag.String("wireguard.peer-names", "", `optional: comma-separated list of colon-separated public keys and friendly peer names, such as: "keyA:foo,keyB:bar"`)
+		wgPeerNamesFile = flag.String("wireguard.peer-names-file", "", `optional: file name, public key and friendly peer name per line, such as: "keyA foo"`)
 	)
 
 	flag.Parse()
@@ -32,14 +32,15 @@ func main() {
 	// Configure the friendly peer names map if the flag is not empty.
 	peerNames := make(map[string]string)
 	if *wgPeerNames != "" {
-		for _, kvs := range strings.Split(*wgPeerNames, ",") {
-			kv := strings.Split(kvs, ":")
-			if len(kv) != 2 {
-				log.Fatalf("failed to parse %q as a valid public key and peer name", kv)
-			}
-
-			peerNames[kv[0]] = kv[1]
+		if err := parsePeerNamesString(peerNames, *wgPeerNames); err != nil {
+			log.Fatalf("wireguard.peer-names: %v", err)
 		}
+	}
+	if *wgPeerNamesFile != "" {
+		if err := parsePeerNamesFile(peerNames, *wgPeerNamesFile); err != nil {
+			log.Fatalf("%s: %v", *wgPeerNamesFile, err)
+		}
+
 	}
 
 	// Make Prometheus client aware of our collector.
