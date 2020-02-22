@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	wireguardexporter "github.com/mdlayher/wireguard_exporter"
 	"github.com/prometheus/client_golang/prometheus"
@@ -52,7 +53,13 @@ func main() {
 
 	// Start listening for HTTP connections.
 	log.Printf("starting WireGuard exporter on %q", *metricsAddr)
-	if err := http.ListenAndServe(*metricsAddr, mux); err != nil {
+	server := http.Server{
+		Addr:         *metricsAddr,
+		Handler:      mux,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("cannot start WireGuard exporter: %s", err)
 	}
 }
