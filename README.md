@@ -38,3 +38,50 @@ irate(wireguard_peer_receive_bytes_total[1m]) * on (public_key) group_left(name)
 ```
 irate(wireguard_peer_transmit_bytes_total[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info
 ```
+
+## Grafana Dashboard
+
+You can view your data using this [Grafana Dashboard](https://grafana.com/grafana/dashboards/12177) using Prometheus as source.
+
+![Grafana Dashboard](grafana_wireguard.png)
+
+## Build Binary 
+
+```
+cd cmd/wireguard_exporter/
+go build .
+mv wireguard_exporter /usr/local/bin/
+```
+
+## Add service file for systemd
+
+```
+[Unit]
+Description=Prometheus WireGuard Exporter
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/local/bin/wireguard_exporter
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Load new service and enable autostart:
+
+```
+systemctl daemon-reload
+systemctl enable wireguard-exporter.service
+```
+
+## Add scraping config to prometheus
+
+In `/etc/prometheus/prometheus.yml` add following config to the section `scrape_configs:` :
+
+```
+  - job_name: wireguard
+    static_configs:
+      - targets: ['localhost:9586']
+```
