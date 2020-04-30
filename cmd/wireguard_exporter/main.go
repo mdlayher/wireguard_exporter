@@ -29,6 +29,10 @@ func main() {
 	}
 	defer client.Close()
 
+	if _, err := client.Devices(); err != nil {
+		log.Fatalf("failed to fetch WireGuard devices: %v", err)
+	}
+
 	// Configure the friendly peer names map if the flag is not empty.
 	peerNames := make(map[string]string)
 	if *wgPeerNames != "" {
