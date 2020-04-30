@@ -33,39 +33,43 @@ func New(devices func() ([]*wgtypes.Device, error), peerNames map[string]string)
 		peerNames = make(map[string]string)
 	}
 
+	// Per-peer metrics are keyed on both device and public key since a peer
+	// can be associated with multiple devices.
+	labels := []string{"device", "public_key"}
+
 	return &collector{
 		DeviceInfo: prometheus.NewDesc(
 			"wireguard_device_info",
 			"Metadata about a device.",
-			[]string{"device", "public_key"},
+			labels,
 			nil,
 		),
 
 		PeerInfo: prometheus.NewDesc(
 			"wireguard_peer_info",
 			"Metadata about a peer. The public_key label on peer metrics refers to the peer's public key; not the device's public key.",
-			[]string{"allowed_ips", "device", "endpoint", "name", "public_key"},
+			append(labels, []string{"allowed_ips", "endpoint", "name"}...),
 			nil,
 		),
 
 		PeerReceiveBytes: prometheus.NewDesc(
 			"wireguard_peer_receive_bytes_total",
 			"Number of bytes received from a given peer.",
-			[]string{"public_key"},
+			labels,
 			nil,
 		),
 
 		PeerTransmitBytes: prometheus.NewDesc(
 			"wireguard_peer_transmit_bytes_total",
 			"Number of bytes transmitted to a given peer.",
-			[]string{"public_key"},
+			labels,
 			nil,
 		),
 
 		PeerLastHandshake: prometheus.NewDesc(
 			"wireguard_peer_last_handshake_seconds",
 			"UNIX timestamp for the last handshake with a given peer.",
-			[]string{"public_key"},
+			labels,
 			nil,
 		),
 
@@ -124,28 +128,34 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				// TODO(mdlayher): is there a better way to represent allowed IP
 				// ranges? Perhaps most users will use a single CIDR anyway and
 				// it won't be a big deal.
-				ipsString(p.AllowedIPs), d.Name, endpoint, name, pub,
+				d.Name, pub, ipsString(p.AllowedIPs), endpoint, name,
 			)
 
 			ch <- prometheus.MustNewConstMetric(
 				c.PeerReceiveBytes,
 				prometheus.CounterValue,
 				float64(p.ReceiveBytes),
-				pub,
+				d.Name, pub,
 			)
 
 			ch <- prometheus.MustNewConstMetric(
 				c.PeerTransmitBytes,
 				prometheus.CounterValue,
 				float64(p.TransmitBytes),
-				pub,
+				d.Name, pub,
 			)
+
+			// Expose last handshake of 0 unless a last handshake time is set.
+			var last float64
+			if !p.LastHandshakeTime.IsZero() {
+				last = float64(p.LastHandshakeTime.Unix())
+			}
 
 			ch <- prometheus.MustNewConstMetric(
 				c.PeerLastHandshake,
 				prometheus.GaugeValue,
-				float64(p.LastHandshakeTime.Unix()),
-				pub,
+				last,
+				d.Name, pub,
 			)
 		}
 	}

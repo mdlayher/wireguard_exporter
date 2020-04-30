@@ -51,6 +51,14 @@ func TestCollector(t *testing.T) {
 					{
 						Name:      "wg1",
 						PublicKey: devB,
+						// Allow the same peer to be associated with
+						// multiple devices.
+						Peers: []wgtypes.Peer{{
+							PublicKey: peerA,
+							AllowedIPs: []net.IPNet{
+								mustCIDR("0.0.0.0/0"),
+							},
+						}},
 					},
 				}, nil
 			},
@@ -61,9 +69,13 @@ func TestCollector(t *testing.T) {
 				`wireguard_device_info{device="wg0",public_key="AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="} 1`,
 				`wireguard_device_info{device="wg1",public_key="AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI="} 1`,
 				`wireguard_peer_info{allowed_ips="192.168.1.0/24,2001:db8::/32",device="wg0",endpoint="[fd00::1]:51820",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
-				`wireguard_peer_last_handshake_seconds{public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 10`,
-				`wireguard_peer_receive_bytes_total{public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
-				`wireguard_peer_transmit_bytes_total{public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 2`,
+				`wireguard_peer_info{allowed_ips="0.0.0.0/0",device="wg1",endpoint="",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_last_handshake_seconds{device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 10`,
+				`wireguard_peer_last_handshake_seconds{device="wg1",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 0`,
+				`wireguard_peer_receive_bytes_total{device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_receive_bytes_total{device="wg1",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 0`,
+				`wireguard_peer_transmit_bytes_total{device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 2`,
+				`wireguard_peer_transmit_bytes_total{device="wg1",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 0`,
 			},
 		},
 	}
