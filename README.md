@@ -3,6 +3,47 @@
 Command `wireguard_exporter` implements a Prometheus exporter for WireGuard
 devices. MIT Licensed.
 
+## Usage
+
+Use the `-h` flag to see full usage:
+
+```text
+$ wireguard_exporter -h
+Usage of wireguard_exporter:
+  -metrics.addr string
+        address for WireGuard exporter (default ":9586")
+  -metrics.path string
+        URL path for surfacing collected metrics (default "/metrics")
+  -wireguard.peer-file string
+        optional: path to TOML friendly peer names mapping file; takes priority over -wireguard.peer-names
+  -wireguard.peer-names string
+        optional: comma-separated list of colon-separated public keys and friendly peer names, such as: "keyA:foo,keyB:bar"
+```
+
+For simple deployments, specifying peer name mappings on the command line may
+be sufficient:
+
+```text
+$ wireguard_exporter -wireguard.peer-names VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8=:foo
+```
+
+For larger deployments, you can also specify a TOML file of friendly peer name
+mappings, which will supersede any command line flag mappings.
+
+```toml
+[[peer]]
+public_key = "VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="
+name = "foo"
+
+[[peer]]
+public_key = "UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="
+name = "bar"
+```
+
+```text
+$ wireguard_exporter -wireguard.peer-file /etc/wireguard/peers.toml
+```
+
 ## Example
 
 This exporter exposes metrics about each configured WireGuard device and its
