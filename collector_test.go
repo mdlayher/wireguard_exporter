@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/mdlayher/promtest"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -68,8 +67,11 @@ func TestCollector(t *testing.T) {
 			metrics: []string{
 				`wireguard_device_info{device="wg0",public_key="AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="} 1`,
 				`wireguard_device_info{device="wg1",public_key="AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI="} 1`,
-				`wireguard_peer_info{allowed_ips="192.168.1.0/24,2001:db8::/32",device="wg0",endpoint="[fd00::1]:51820",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
-				`wireguard_peer_info{allowed_ips="0.0.0.0/0",device="wg1",endpoint="",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_info{device="wg0",endpoint="[fd00::1]:51820",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_info{device="wg1",endpoint="",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_allowed_ips_info{allowed_ips="192.168.1.0/24",device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_allowed_ips_info{allowed_ips="2001:db8::/32",device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_allowed_ips_info{allowed_ips="0.0.0.0/0",device="wg1",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
 				`wireguard_peer_last_handshake_seconds{device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 10`,
 				`wireguard_peer_last_handshake_seconds{device="wg1",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 0`,
 				`wireguard_peer_receive_bytes_total{device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
@@ -95,47 +97,6 @@ func TestCollector(t *testing.T) {
 	}
 }
 
-func Test_ipsString(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []net.IPNet
-		out  string
-	}{
-		{
-			name: "empty",
-		},
-		{
-			name: "noop",
-			in: []net.IPNet{
-				mustCIDR("192.168.1.0/24"),
-				mustCIDR("2001:db8::/32"),
-			},
-			out: "192.168.1.0/24,2001:db8::/32",
-		},
-		{
-			name: "all",
-			in: []net.IPNet{
-				mustCIDR("192.0.2.0/24"),
-				mustCIDR("2001:db8::/64"),
-				mustCIDR("192.51.100.1/32"),
-				mustCIDR("2001:db8:aaaa::2/128"),
-				mustCIDR("2001:db8:aaaa::1/128"),
-				mustCIDR("192.168.0.0/16"),
-				mustCIDR("2001:db8:ffff::/48"),
-			},
-			out: "192.168.0.0/16,192.0.2.0/24,192.51.100.1/32,2001:db8:ffff::/48,2001:db8::/64,2001:db8:aaaa::1/128,2001:db8:aaaa::2/128",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if diff := cmp.Diff(tt.out, ipsString(tt.in)); diff != "" {
-				t.Fatalf("unexpected output (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func publicKey(b byte) wgtypes.Key {
 	key, err := wgtypes.NewKey(bytes.Repeat([]byte{b}, wgtypes.KeyLen))
 	if err != nil {
@@ -143,6 +104,17 @@ func publicKey(b byte) wgtypes.Key {
 	}
 
 	return key
+}
+
+// mustCIDR parses s as a net.IPNet or panics.
+func mustCIDR(s string) net.IPNet {
+	ip, cidr, err := net.ParseCIDR(s)
+	if err != nil {
+		panicf("failed to parse CIDR: %v", err)
+	}
+	cidr.IP = ip
+
+	return *cidr
 }
 
 func panicf(format string, a ...interface{}) {

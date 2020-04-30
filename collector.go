@@ -1,10 +1,7 @@
 package wireguardexporter
 
 import (
-	"bytes"
-	"net"
-	"sort"
-	"strings"
+	"log"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -16,10 +13,11 @@ var _ prometheus.Collector = &collector{}
 type collector struct {
 	DeviceInfo *prometheus.Desc
 
-	PeerInfo          *prometheus.Desc
-	PeerReceiveBytes  *prometheus.Desc
-	PeerTransmitBytes *prometheus.Desc
-	PeerLastHandshake *prometheus.Desc
+	PeerInfo           *prometheus.Desc
+	PeerAllowedIPsInfo *prometheus.Desc
+	PeerReceiveBytes   *prometheus.Desc
+	PeerTransmitBytes  *prometheus.Desc
+	PeerLastHandshake  *prometheus.Desc
 
 	devices   func() ([]*wgtypes.Device, error)
 	peerNames map[string]string
@@ -48,7 +46,14 @@ func New(devices func() ([]*wgtypes.Device, error), peerNames map[string]string)
 		PeerInfo: prometheus.NewDesc(
 			"wireguard_peer_info",
 			"Metadata about a peer. The public_key label on peer metrics refers to the peer's public key; not the device's public key.",
-			append(labels, []string{"allowed_ips", "endpoint", "name"}...),
+			append(labels, []string{"endpoint", "name"}...),
+			nil,
+		),
+
+		PeerAllowedIPsInfo: prometheus.NewDesc(
+			"wireguard_peer_allowed_ips_info",
+			"Metadata about each of a peer's allowed IP subnets for a given device.",
+			append(labels, []string{"allowed_ips"}...),
 			nil,
 		),
 
@@ -83,6 +88,7 @@ func (c *collector) Describe(ch chan<- *prometheus.Desc) {
 	ds := []*prometheus.Desc{
 		c.DeviceInfo,
 		c.PeerInfo,
+		c.PeerAllowedIPsInfo,
 		c.PeerReceiveBytes,
 		c.PeerTransmitBytes,
 		c.PeerLastHandshake,
@@ -97,6 +103,7 @@ func (c *collector) Describe(ch chan<- *prometheus.Desc) {
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	devices, err := c.devices()
 	if err != nil {
+		log.Printf("failed to list devices: %v", err)
 		ch <- prometheus.NewInvalidMetric(c.DeviceInfo, err)
 		return
 	}
@@ -125,11 +132,17 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				c.PeerInfo,
 				prometheus.GaugeValue,
 				1,
-				// TODO(mdlayher): is there a better way to represent allowed IP
-				// ranges? Perhaps most users will use a single CIDR anyway and
-				// it won't be a big deal.
-				d.Name, pub, ipsString(p.AllowedIPs), endpoint, name,
+				d.Name, pub, endpoint, name,
 			)
+
+			for _, ip := range p.AllowedIPs {
+				ch <- prometheus.MustNewConstMetric(
+					c.PeerAllowedIPsInfo,
+					prometheus.GaugeValue,
+					1,
+					d.Name, pub, ip.String(),
+				)
+			}
 
 			ch <- prometheus.MustNewConstMetric(
 				c.PeerReceiveBytes,
@@ -159,48 +172,4 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 			)
 		}
 	}
-}
-
-// ipsString produces a string representation of a list of allowed peer IP CIDR
-// values.
-func ipsString(ipns []net.IPNet) string {
-	// In order to sort these values properly, we first convert them all to
-	// strings. Sorting behavior appears to be indeterminate when dealing with
-	// the net.IPNet types directly, likely due to net.IP and net.IPMask being
-	// slice types.
-	//
-	// By this point, we assume all of the input net.IPNet values are valid,
-	// and thus mustCIDR will force a panic if any of them are not.
-	ss := make([]string, 0, len(ipns))
-	for _, ipn := range ipns {
-		ss = append(ss, ipn.String())
-	}
-
-	sort.SliceStable(ss, func(i, j int) bool {
-		// Parse the strings for each check so we can sort by IP family, mask
-		// length, and finally lexical order of addresses.
-		ci, cj := mustCIDR(ss[i]), mustCIDR(ss[j])
-
-		onesI, bitsI := ci.Mask.Size()
-		onesJ, bitsJ := cj.Mask.Size()
-
-		if bitsI < bitsJ || onesI < onesJ {
-			return true
-		}
-
-		return bytes.Compare(ci.IP, cj.IP) == -1
-	})
-
-	return strings.Join(ss, ",")
-}
-
-// mustCIDR parses s as a net.IPNet or panics.
-func mustCIDR(s string) net.IPNet {
-	ip, cidr, err := net.ParseCIDR(s)
-	if err != nil {
-		panic(err)
-	}
-	cidr.IP = ip
-
-	return *cidr
 }
