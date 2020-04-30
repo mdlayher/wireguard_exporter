@@ -12,19 +12,27 @@ peers, using any device implementation supported by [wgctrl-go](https://github.c
 $ curl -s http://localhost:9586/metrics | grep wireguard
 # HELP wireguard_device_info Metadata about a device.
 # TYPE wireguard_device_info gauge
-wireguard_device_info{device="wg0",public_key="TM7UyJLMf7nPvWC4fb5xoEQedgQ9RwyyEaWGk1Zrow4="} 1
+wireguard_device_info{device="wg0",public_key="QwAmAD1v4wMIX/0gKJbr9hv1o3YX0YTk7Mdj0L4dylI="} 1
+# HELP wireguard_peer_allowed_ips_info Metadata about each of a peer's allowed IP subnets for a given device.
+# TYPE wireguard_peer_allowed_ips_info gauge
+wireguard_peer_allowed_ips_info{allowed_ips="192.168.20.0/24",device="wg0",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1
+wireguard_peer_allowed_ips_info{allowed_ips="fd9e:1a04:f01d:20::/64",device="wg0",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1
 # HELP wireguard_peer_info Metadata about a peer. The public_key label on peer metrics refers to the peer's public key; not the device's public key.
 # TYPE wireguard_peer_info gauge
-wireguard_peer_info{allowed_ips="192.168.20.0/24",device="wg0",endpoint="192.168.1.150:51820",name="example",public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 1
+wireguard_peer_info{device="wg0",endpoint="",name="foo",public_key="VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="} 1
+wireguard_peer_info{device="wg0",endpoint="[fd9e:1a04:f01d:20:e5c2:7b69:90d8:ca45]:49203",name="bar",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1
 # HELP wireguard_peer_last_handshake_seconds UNIX timestamp for the last handshake with a given peer.
 # TYPE wireguard_peer_last_handshake_seconds gauge
-wireguard_peer_last_handshake_seconds{public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 1.558580872e+09
+wireguard_peer_last_handshake_seconds{device="wg0",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1.588274629e+09
+wireguard_peer_last_handshake_seconds{device="wg0",public_key="VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="} 0
 # HELP wireguard_peer_receive_bytes_total Number of bytes received from a given peer.
 # TYPE wireguard_peer_receive_bytes_total counter
-wireguard_peer_receive_bytes_total{public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 0
+wireguard_peer_receive_bytes_total{device="wg0",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 76728
+wireguard_peer_receive_bytes_total{device="wg0",public_key="VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="} 0
 # HELP wireguard_peer_transmit_bytes_total Number of bytes transmitted to a given peer.
 # TYPE wireguard_peer_transmit_bytes_total counter
-wireguard_peer_transmit_bytes_total{public_key="2RTeXgsWP9siIqULJukjlfA3SRYA3R6YsVnJ5GUzu3o="} 2960
+wireguard_peer_transmit_bytes_total{device="wg0",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 76200
+wireguard_peer_transmit_bytes_total{device="wg0",public_key="VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="} 0
 ```
 
 ### Sample queries
@@ -33,10 +41,10 @@ Get the receive and transmit rates of individual peers, and enable querying on
 both the WireGuard device name and the peer's friendly name:
 
 ```
-irate(wireguard_peer_receive_bytes_total[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info
+irate(wireguard_peer_receive_bytes_total[5m]) * on (public_key, device) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info
 ```
 ```
-irate(wireguard_peer_transmit_bytes_total[1m]) * on (public_key) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info
+irate(wireguard_peer_transmit_bytes_total[5m]) * on (public_key, device) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info
 ```
 
 ## Grafana Dashboard
