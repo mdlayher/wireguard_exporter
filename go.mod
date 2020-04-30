@@ -3,6 +3,7 @@ module github.com/mdlayher/wireguard_exporter
 go 1.13
 
 require (
+	github.com/BurntSushi/toml v0.3.1
 	github.com/google/go-cmp v0.3.0
 	github.com/mdlayher/genetlink v0.0.0-20190605184957-3071ac0624c8 // indirect
 	github.com/mdlayher/promtest v0.0.0-20190524150926-c5fad164e6e9

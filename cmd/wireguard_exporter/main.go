@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -20,6 +21,7 @@ func main() {
 		metricsAddr = flag.String("metrics.addr", ":9586", "address for WireGuard exporter")
 		metricsPath = flag.String("metrics.path", "/metrics", "URL path for surfacing collected metrics")
 		wgPeerNames = flag.String("wireguard.peer-names", "", `optional: comma-separated list of colon-separated public keys and friendly peer names, such as: "keyA:foo,keyB:bar"`)
+		wgPeerFile  = flag.String("wireguard.peer-file", "", "optional: path to TOML friendly peer names mapping file; takes priority over -wireguard.peer-names")
 	)
 
 	flag.Parse()
@@ -44,6 +46,30 @@ func main() {
 			}
 
 			peerNames[kv[0]] = kv[1]
+		}
+
+		log.Printf("loaded %d peer name mappings from command line", len(peerNames))
+	}
+
+	// In addition, load peer name mappings from a file if specified.
+	if file := *wgPeerFile; file != "" {
+		f, err := os.Open(file)
+		if err != nil {
+			log.Fatalf("failed to open peer names file: %v", err)
+		}
+		defer f.Close()
+
+		names, err := wireguardexporter.ParsePeers(f)
+		if err != nil {
+			log.Fatalf("failed to parse peer names file: %v", err)
+		}
+		_ = f.Close()
+
+		log.Printf("loaded %d peer name mappings from file %q", len(names), file)
+
+		// Merge file name mappings and overwrite CLI mappings if necessary.
+		for k, v := range names {
+			peerNames[k] = v
 		}
 	}
 
