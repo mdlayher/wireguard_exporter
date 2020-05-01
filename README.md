@@ -56,8 +56,8 @@ $ curl -s http://localhost:9586/metrics | grep wireguard
 wireguard_device_info{device="wg0",public_key="QwAmAD1v4wMIX/0gKJbr9hv1o3YX0YTk7Mdj0L4dylI="} 1
 # HELP wireguard_peer_allowed_ips_info Metadata about each of a peer's allowed IP subnets for a given device.
 # TYPE wireguard_peer_allowed_ips_info gauge
-wireguard_peer_allowed_ips_info{allowed_ips="192.168.20.0/24",device="wg0",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1
-wireguard_peer_allowed_ips_info{allowed_ips="fd9e:1a04:f01d:20::/64",device="wg0",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1
+wireguard_peer_allowed_ips_info{allowed_ips="192.168.20.0/24",device="wg0",family="IPv4",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1
+wireguard_peer_allowed_ips_info{allowed_ips="fd9e:1a04:f01d:20::/64",device="wg0",family="IPv6",public_key="UvwWyMQ1ckLEG82Qdooyr0UzJhqOlzzcx90DXuwMTDA="} 1
 # HELP wireguard_peer_info Metadata about a peer. The public_key label on peer metrics refers to the peer's public key; not the device's public key.
 # TYPE wireguard_peer_info gauge
 wireguard_peer_info{device="wg0",endpoint="",name="foo",public_key="VWRsPtbdGtcNyaQ+cFAZfZnYL05uj+XINQS6yQY5gQ8="} 1

@@ -2,7 +2,6 @@ package wireguardexporter
 
 import (
 	"bytes"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -69,9 +68,9 @@ func TestCollector(t *testing.T) {
 				`wireguard_device_info{device="wg1",public_key="AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI="} 1`,
 				`wireguard_peer_info{device="wg0",endpoint="[fd00::1]:51820",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
 				`wireguard_peer_info{device="wg1",endpoint="",name="foo",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
-				`wireguard_peer_allowed_ips_info{allowed_ips="192.168.1.0/24",device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
-				`wireguard_peer_allowed_ips_info{allowed_ips="2001:db8::/32",device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
-				`wireguard_peer_allowed_ips_info{allowed_ips="0.0.0.0/0",device="wg1",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_allowed_ips_info{allowed_ips="192.168.1.0/24",device="wg0",family="IPv4",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_allowed_ips_info{allowed_ips="2001:db8::/32",device="wg0",family="IPv6",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
+				`wireguard_peer_allowed_ips_info{allowed_ips="0.0.0.0/0",device="wg1",family="IPv4",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
 				`wireguard_peer_last_handshake_seconds{device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 10`,
 				`wireguard_peer_last_handshake_seconds{device="wg1",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 0`,
 				`wireguard_peer_receive_bytes_total{device="wg0",public_key="AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM="} 1`,
@@ -115,8 +114,4 @@ func mustCIDR(s string) net.IPNet {
 	cidr.IP = ip
 
 	return *cidr
-}
-
-func panicf(format string, a ...interface{}) {
-	panic(fmt.Sprintf(format, a...))
 }

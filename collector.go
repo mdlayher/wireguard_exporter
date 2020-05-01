@@ -1,7 +1,9 @@
 package wireguardexporter
 
 import (
+	"fmt"
 	"log"
+	"net"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -53,7 +55,7 @@ func New(devices func() ([]*wgtypes.Device, error), peerNames map[string]string)
 		PeerAllowedIPsInfo: prometheus.NewDesc(
 			"wireguard_peer_allowed_ips_info",
 			"Metadata about each of a peer's allowed IP subnets for a given device.",
-			append(labels, []string{"allowed_ips"}...),
+			append(labels, []string{"allowed_ips", "family"}...),
 			nil,
 		),
 
@@ -140,7 +142,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 					c.PeerAllowedIPsInfo,
 					prometheus.GaugeValue,
 					1,
-					d.Name, pub, ip.String(),
+					d.Name, pub, ip.String(), ipFamily(ip.IP),
 				)
 			}
 
@@ -172,4 +174,20 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 			)
 		}
 	}
+}
+
+func ipFamily(ip net.IP) string {
+	if ip.To16() == nil {
+		panicf("invalid IP address: %q", ip)
+	}
+
+	if ip.To4() == nil {
+		return "IPv6"
+	}
+
+	return "IPv4"
+}
+
+func panicf(format string, a ...interface{}) {
+	panic(fmt.Sprintf(format, a...))
 }
