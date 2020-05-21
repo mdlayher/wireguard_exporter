@@ -78,7 +78,7 @@ wireguard_peer_transmit_bytes_total{device="wg0",public_key="VWRsPtbdGtcNyaQ+cFA
 
 ### Sample queries
 
-Get the receive and transmit rates of individual peers, and enable querying on
+Get the receive and transmit rates and last handshake of individual peers, and enable querying on
 both the WireGuard device name and the peer's friendly name:
 
 ```
@@ -86,6 +86,9 @@ irate(wireguard_peer_receive_bytes_total[5m]) * on (public_key, device) group_le
 ```
 ```
 irate(wireguard_peer_transmit_bytes_total[5m]) * on (public_key, device) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info
+```
+```
+time()-(wireguard_peer_last_handshake_seconds * on (public_key, device) group_left(name) wireguard_peer_info * on (instance) group_left(device) wireguard_device_info)
 ```
 
 ## Grafana Dashboard
