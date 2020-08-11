@@ -97,6 +97,16 @@ You can view your data using this [Grafana Dashboard](https://grafana.com/grafan
 
 ![Grafana Dashboard](grafana_wireguard.png)
 
+## Build Container Image
+
+```
+docker build -t wge -f wireguard_exporter.Dockerfile .
+# to test the container image:
+docker run --rm -p 9586:9586 -v $(pwd)/peers.toml:/usr/src/app/peers.toml wge
+# then see: http://localhost:9586/metrics
+```
+
+
 ## Build Binary 
 
 ```
