@@ -1,10 +1,13 @@
 package wireguardexporter
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	"github.com/BurntSushi/toml"
+	"github.com/naggie/dsnet"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
@@ -39,6 +42,35 @@ func ParsePeers(r io.Reader) (map[string]string, error) {
 		}
 
 		peers[p.PublicKey] = p.Name
+	}
+
+	return peers, nil
+}
+
+// ParseDsnetConfig parses a dnset config file for friendly names.
+func ParseDsnetConfig(r io.Reader) (map[string]string, error) {
+	peers := make(map[string]string)
+
+	f, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg dsnet.DsnetConfig
+	if err := json.Unmarshal(f, &cfg); err != nil {
+		return nil, err
+	}
+
+	for _, p := range cfg.Peers {
+		if _, err := wgtypes.ParseKey(p.PublicKey.Key.String()); err != nil {
+			return nil, fmt.Errorf("invalid public key %q: %v", p.PublicKey, err)
+		}
+
+		if p.Hostname == "" {
+			return nil, fmt.Errorf("no name set for peer with public key %q", p.PublicKey)
+		}
+
+		peers[p.PublicKey.Key.String()] = p.Hostname
 	}
 
 	return peers, nil
