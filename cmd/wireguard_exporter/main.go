@@ -18,10 +18,11 @@ import (
 
 func main() {
 	var (
-		metricsAddr = flag.String("metrics.addr", ":9586", "address for WireGuard exporter")
-		metricsPath = flag.String("metrics.path", "/metrics", "URL path for surfacing collected metrics")
-		wgPeerNames = flag.String("wireguard.peer-names", "", `optional: comma-separated list of colon-separated public keys and friendly peer names, such as: "keyA:foo,keyB:bar"`)
-		wgPeerFile  = flag.String("wireguard.peer-file", "", "optional: path to TOML friendly peer names mapping file; takes priority over -wireguard.peer-names")
+		metricsAddr     = flag.String("metrics.addr", ":9586", "address for WireGuard exporter")
+		metricsPath     = flag.String("metrics.path", "/metrics", "URL path for surfacing collected metrics")
+		wgPeerNames     = flag.String("wireguard.peer-names", "", `optional: comma-separated list of colon-separated public keys and friendly peer names, such as: "keyA:foo,keyB:bar"`)
+		wgPeerFile      = flag.String("wireguard.peer-file", "", "optional: path to TOML friendly peer names mapping file; takes priority over -wireguard.peer-names and -dsnet.config-file")
+		dsnetConfigFile = flag.String("dsnet.config-file", "", "optional: path to dsnet config file for peer name mapping")
 	)
 
 	flag.Parse()
@@ -49,6 +50,27 @@ func main() {
 		}
 
 		log.Printf("loaded %d peer name mappings from command line", len(peerNames))
+	}
+
+	// Read peer names from dsnet config file.
+	if file := *dsnetConfigFile; file != "" {
+		f, err := os.Open(file)
+		if err != nil {
+			log.Fatalf("failed to open dsnet config file: %v", err)
+		}
+		defer f.Close()
+
+		names, err := wireguardexporter.ParseDsnetConfig(f)
+		if err != nil {
+			log.Fatalf("failed to parse peer names from dsnet config: %v", err)
+		}
+
+		log.Printf("loaded %d peer name mappings from file %q", len(names), file)
+
+		// Merge file name mappings and overwrite CLI mappings if necessary.
+		for k, v := range names {
+			peerNames[k] = v
+		}
 	}
 
 	// In addition, load peer name mappings from a file if specified.
