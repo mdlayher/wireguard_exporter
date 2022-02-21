@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  wireguard-exporter:
+    build: .
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /etc/wireguard/peers.toml:/etc/wireguard/peers.toml:ro
+    cap_add:
+      - NET_ADMIN
+    command: wireguard_exporter -wireguard.peer-file /etc/wireguard/peers.toml
