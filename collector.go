@@ -55,28 +55,28 @@ func New(devices func() ([]*wgtypes.Device, error), peerNames map[string]string)
 		PeerAllowedIPsInfo: prometheus.NewDesc(
 			"wireguard_peer_allowed_ips_info",
 			"Metadata about each of a peer's allowed IP subnets for a given device.",
-			append(labels, []string{"allowed_ips", "family"}...),
+			append(labels, []string{"allowed_ips", "family", "name"}...),
 			nil,
 		),
 
 		PeerReceiveBytes: prometheus.NewDesc(
 			"wireguard_peer_receive_bytes_total",
 			"Number of bytes received from a given peer.",
-			labels,
+			append(labels, []string{"name"}...),
 			nil,
 		),
 
 		PeerTransmitBytes: prometheus.NewDesc(
 			"wireguard_peer_transmit_bytes_total",
 			"Number of bytes transmitted to a given peer.",
-			labels,
+			append(labels, []string{"name"}...),
 			nil,
 		),
 
 		PeerLastHandshake: prometheus.NewDesc(
 			"wireguard_peer_last_handshake_seconds",
 			"UNIX timestamp for the last handshake with a given peer.",
-			labels,
+			append(labels, []string{"name"}...),
 			nil,
 		),
 
@@ -142,7 +142,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 					c.PeerAllowedIPsInfo,
 					prometheus.GaugeValue,
 					1,
-					d.Name, pub, ip.String(), ipFamily(ip.IP),
+					d.Name, pub, ip.String(), ipFamily(ip.IP), name,
 				)
 			}
 
@@ -150,14 +150,14 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				c.PeerReceiveBytes,
 				prometheus.CounterValue,
 				float64(p.ReceiveBytes),
-				d.Name, pub,
+				d.Name, pub, name,
 			)
 
 			ch <- prometheus.MustNewConstMetric(
 				c.PeerTransmitBytes,
 				prometheus.CounterValue,
 				float64(p.TransmitBytes),
-				d.Name, pub,
+				d.Name, pub, name,
 			)
 
 			// Expose last handshake of 0 unless a last handshake time is set.
@@ -170,7 +170,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 				c.PeerLastHandshake,
 				prometheus.GaugeValue,
 				last,
-				d.Name, pub,
+				d.Name, pub, name,
 			)
 		}
 	}
