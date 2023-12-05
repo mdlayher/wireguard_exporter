@@ -137,3 +137,11 @@ In `/etc/prometheus/prometheus.yml` add following config to the section `scrape_
     static_configs:
       - targets: ['localhost:9586']
 ```
+
+## Docker / Docker Compose Usage
+
+You can use the Dockerfile to build and run `wireguard_exporter` in a Docker
+container.
+
+For easier usage, you can also use the provided `docker-compose.yml` file for a
+Docker Compose setup.
